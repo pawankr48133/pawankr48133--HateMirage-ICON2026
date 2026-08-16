@@ -1,0 +1,1 @@
+# HateMirage scripts package

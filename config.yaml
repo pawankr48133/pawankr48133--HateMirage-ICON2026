@@ -1,0 +1,62 @@
+# =============================================================================
+# HateMirage ICON 2026 — Central Configuration
+# =============================================================================
+# All model IDs, paths, hyperparameters, and retrieval settings in one place.
+# Change settings here rather than editing scripts directly.
+# =============================================================================
+
+# --- Model Configuration ---
+model:
+  # HuggingFace model ID (swap for any compatible causal LM)
+  id: "microsoft/Phi-3.5-mini-instruct"
+  # Quantization: "4bit-nf4" for free Colab T4, "none" for full precision
+  quantization: "4bit-nf4"
+  # Maximum new tokens to generate per field
+  max_new_tokens: 128
+  # Sampling (False = greedy decoding)
+  do_sample: false
+  # Temperature (only used if do_sample is true)
+  temperature: 0.7
+
+# --- Data Paths ---
+data:
+  # Path to the labeled dataset (xlsx with columns: Index, Comments, Target, Intent, Implication)
+  train_path: "data/sample-data.xlsx"
+  # Validation split ratio (fraction held out from training data for local evaluation)
+  val_split: 0.2
+  # Random seed for reproducible splits
+  seed: 42
+  # Output directory for predictions, logs, eval results
+  output_dir: "outputs/"
+
+# --- RAG Configuration ---
+rag:
+  # Embedding model for FAISS retrieval
+  embedding_model: "sentence-transformers/all-mpnet-base-v2"
+  # Path to JSONL file with context documents
+  source_docs: "source_docs/RAG_Reference_Data.jsonl"
+  # Path to supplementary fake claims file
+  fake_claims: "source_docs/fake_claims.txt"
+  # Number of top-k documents to retrieve per query
+  top_k: 5
+  # Directory where built FAISS index is stored
+  faiss_index_dir: "faiss_index/"
+
+# --- Evaluation Configuration ---
+evaluation:
+  # Sentence-BERT model used for computing cosine similarity metric
+  sbert_model: "sentence-transformers/all-MiniLM-L6-v2"
+
+# --- Prompt Configuration ---
+prompt:
+  # Which prompt variant to use: "vanilla", "few_shot", "cot"
+  variant: "vanilla"
+  # Number of few-shot examples (only used when variant is "few_shot")
+  num_examples: 3
+
+# --- Experiment Tracking ---
+experiment:
+  # Name tag for this experiment run (used in output filenames)
+  name: "baseline"
+  # Path to experiment log CSV
+  log_path: "outputs/experiment_log.csv"

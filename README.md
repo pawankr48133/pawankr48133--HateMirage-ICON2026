@@ -1,66 +1,168 @@
-<table>
-<tr>
-<td width="160" valign="top">
-<img src="assets/logo.png" alt="HateMirage logo" width="140">
-</td>
-<td valign="top">
+# HateMirage ICON 2026 — Explainable Faux Hate Detection
 
-# HateMirage
+Submission for the [HateMirage ICON 2026 Shared Task](https://sai-kartheek-reddy.github.io/HateMirage-ICON2026/): **Explainable Faux Hate Detection and Multi-Dimensional Reasoning**.
 
-**Explainable Faux Hate Detection** — a shared task at **[ICON 2026](https://www.icon2026.org/)**.
+- **Task A** — Target Identification: identify who is being targeted in a faux-hate comment.
+- **Task B** — Intent & Implication Generation: explain the motive and social consequence.
 
-🏆 **[Participate in the HateMirage ICON 2026 Shared Task on Codabench](https://www.codabench.org/competitions/17783/)**
-
-[🌐 Website](https://sai-kartheek-reddy.github.io/HateMirage-ICON2026/) · [📄 Paper (LREC 2026)](https://arxiv.org/abs/2603.02684) · [📝 Register](https://forms.gle/zegMMsKUmpnhZ6t17) · [💬 Google Group](https://groups.google.com/g/hatemirage-icon2026)
-
-</td>
-</tr>
-</table>
+> **Codabench**: [Competition Page](https://www.codabench.org/competitions/17783/)  
+> **Paper**: [HateMirage (LREC 2026)](https://arxiv.org/abs/2603.02684)
 
 ---
 
-## About
+## Repository Structure
 
-Hate can hide inside comments that contain no slurs and trip no keyword filter, because the hostility is built on a fabricated premise rather than an explicit insult. **HateMirage** is a shared task on *Faux Hate*: content that is both hateful and rooted in debunked claims. Instead of a binary flag, systems are asked to explain **who** is targeted, **why** (Intent), and **what harm it could cause** (Implication).
-
-The task is built on a corpus of 4,530 annotated comments, sourced from widely debunked claims traced to YouTube comment sections on international English news channels (English and Hindi-English code-mixed text included). Full construction details are in the paper, accepted at **LREC 2026**.
-
-## Tasks
-
-| | |
-|---|---|
-| **Task A: Target Identification** | Extract the entity or community a Faux Hate comment is actually directed against, even when the attack is implied rather than stated outright. |
-| **Task B: Intent & Implication Generation** | Generate free-text explanations of the comment's Intent and its likely Implication, a structured generation problem rather than classification. |
-
-Both tasks run on the same comments, so a single system can cover the full pipeline, or teams can enter either task on its own.
-
-## Dataset
-
-| Train | Validation | Test | Total |
-|:---:|:---:|:---:|:---:|
-| 3,171 | 453 | 906 | **4,530** |
-
-## Key dates
-
-See the [live timeline](https://sai-kartheek-reddy.github.io/HateMirage-ICON2026/#timeline) on the website; it auto-updates, so this README won't go stale trying to duplicate it.
-
-## Get involved
-
-1. **[Register your team](https://forms.gle/zegMMsKUmpnhZ6t17)**: tell us your team name and contact email.
-2. **[Join the Google Group](https://groups.google.com/g/hatemirage-icon2026)**: training data, baselines, and announcements are shared there.
-
-## Organizing Committee
-
-- Sai Kartheek Reddy Kasu, Independent Researcher
-- Shankar Biradar, Assistant Professor, MIT Manipal (MAHE)
-- Sunil Saumya, Dean of Academics & Assistant Professor, IIIT Dharwad
-- Md. Shad Akhtar, Assistant Professor, IIIT Delhi
-
-## Contact
-
-Questions about the task? Reach out to Contact: **[hatemirage-icon2026@googlegroups.com](mailto:hatemirage-icon2026@googlegroups.com)**
-
+```text
+HateMirage-ICON2026/
+├── config.yaml                     # Central configuration (models, paths, hyperparams)
+├── evaluate.py                     # Competition-matching evaluation script
+├── requirements.txt                # Python dependencies
+├── README.md                       # This file
+│
+├── data/
+│   └── sample-data.xlsx            # Sample dataset (50 rows)
+│
+├── source_docs/
+│   ├── RAG_Reference_Data.jsonl    # RAG context documents
+│   └── fake_claims.txt             # List of debunked fake claims
+│
+├── scripts/
+│   ├── run_baseline.py             # Unified Zero-Shot + RAG inference runner
+│   ├── run_experiment.py           # Automated experiment matrix driver
+│   ├── prompt_templates.py         # All prompt variants (vanilla, few-shot, CoT)
+│   ├── generate_results_table.py   # Results formatting (Markdown + LaTeX)
+│   └── eda.py                      # Exploratory data analysis
+│
+├── Starter-Kit/                    # Original starter kit (preserved for reference)
+│
+├── faiss_index/                    # Generated FAISS index (auto-created)
+│
+└── outputs/                        # All predictions, eval results, experiment logs
+```
 
 ---
 
-<p align="center"><sub>© 2026 HateMirage organizing committee</sub></p>
+## Quick Start (Google Colab)
+
+### 1. Setup
+
+```python
+# Clone and install
+!git clone https://github.com/YOUR-USERNAME/HateMirage-ICON2026.git
+%cd HateMirage-ICON2026
+!pip install -r requirements.txt
+!python -c "import nltk; nltk.download('punkt')"
+```
+
+### 2. Run EDA
+
+```bash
+python scripts/eda.py --data_path data/sample-data.xlsx
+```
+
+### 3. Run a Baseline (Zero-Shot)
+
+```bash
+python scripts/run_baseline.py \
+    --config config.yaml \
+    --mode zero-shot \
+    --prompt vanilla
+```
+
+### 4. Run a Baseline (RAG)
+
+```bash
+python scripts/run_baseline.py \
+    --config config.yaml \
+    --mode rag \
+    --prompt vanilla
+```
+
+### 5. Evaluate Predictions
+
+```bash
+python evaluate.py \
+    --predictions outputs/zero-shot_vanilla_results.csv \
+    --gold data/sample-data.xlsx \
+    --task both
+```
+
+### 6. Run Full Experiment Matrix
+
+```bash
+python scripts/run_experiment.py --config config.yaml --all
+```
+
+### 7. Generate Results Table
+
+```bash
+python scripts/generate_results_table.py --log outputs/experiment_log.csv
+```
+
+---
+
+## Model & Config Choices
+
+All configuration is in [`config.yaml`](config.yaml). Key decisions:
+
+| Setting | Choice | Rationale |
+|---------|--------|-----------|
+| Quantization | 4-bit NF4 | Fits 8B models on free Colab T4 (15 GB VRAM) |
+| Embedding model | `all-mpnet-base-v2` | Starter kit default; strong for semantic retrieval |
+| Eval SBERT model | `all-MiniLM-L6-v2` | Lightweight, matches competition scoring |
+| Candidate LLMs | Phi-3.5-mini, Qwen3-8B, Mistral-7B | Cover 3B-8B range, all Apache 2.0 / open |
+| Prompt variants | vanilla, few-shot, chain-of-thought | Test instruction quality vs. reasoning depth |
+| RAG top-k | 5 | Starter kit default; tunable in config |
+
+---
+
+## Evaluation
+
+Scoring matches the competition exactly:
+- **Metrics**: Sentence-BERT cosine similarity + ROUGE-L F1
+- **Task A**: Both metrics on Target → Final = mean(SBERT, ROUGE-L)
+- **Task B**: Both metrics on Intent & Implication, averaged → Final = mean(avg_SBERT, avg_ROUGE-L)
+
+---
+
+## Results
+
+*(Table will be populated after running experiments)*
+
+See [`outputs/results_comparison.md`](outputs/results_comparison.md) for the full comparison.
+
+---
+
+## Known Limitations
+
+1. **Sample data only**: Built against 50-row sample; performance numbers will change with the full 4,530-comment training set.
+2. **Colab-only**: Pipeline assumes T4 GPU with 15 GB VRAM. Larger models (>8B) won't fit without further quantization.
+3. **No fine-tuning**: All experiments use pretrained models via prompting. QLoRA fine-tuning could improve scores but requires more compute time.
+4. **Code-mixed handling**: Hindi-English code-mixed comments may get lower-quality outputs from models not extensively trained on Hindi.
+
+---
+
+## AI Writing Assistance Disclosure
+
+> **[TODO]**: This submission used an AI coding assistant to help write infrastructure code (data loading, evaluation scripts, experiment automation). All scientific decisions (model selection, prompt design, result interpretation) were made by the authors. Per the shared task guidelines, this usage is disclosed here.
+
+---
+
+## Citation
+
+```bibtex
+@article{kasu2026hatemirage,
+  title={HateMirage: An Explainable Multi-Dimensional Dataset for Decoding Faux Hate and Subtle Online Abuse},
+  author={Kasu, Sai Kartheek Reddy and Biradar, Shankar and Saumya, Sunil and Akhtar, Md. Shad},
+  journal={arXiv preprint arXiv:2603.02684},
+  year={2026}
+}
+```
+
+> **[TODO]**: Add the shared task overview paper citation once published.
+
+---
+
+## License
+
+This repository is for research purposes as part of the HateMirage ICON 2026 shared task.
