@@ -21,8 +21,10 @@ model:
 # --- Data Paths ---
 data:
   # Path to the labeled dataset (xlsx with columns: Index, Comments, Target, Intent, Implication)
-  train_path: "data/sample-data.xlsx"
-  # Validation split ratio (fraction held out from training data for local evaluation)
+  train_path: "data/Train.xlsx"
+  # Blind validation set for Codabench submission (Index + Comments only, no labels)
+  val_path: "data/Val-for-dev.xlsx"
+  # Validation split ratio (fraction held out from Train.xlsx for local evaluation)
   val_split: 0.2
   # Random seed for reproducible splits
   seed: 42
