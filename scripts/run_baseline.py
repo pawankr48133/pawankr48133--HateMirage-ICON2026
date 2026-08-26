@@ -245,7 +245,7 @@ def run_inference(config: dict, mode: str, prompt_variant: str,
     print(f"  Device: {device}")
     if device.type == "cuda":
         print(f"  GPU: {torch.cuda.get_device_name(0)}")
-        print(f"  VRAM: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB")
+        print(f"  VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
 
     # --- Load data ---
     print(f"\n  Loading data from {data_path}...")
