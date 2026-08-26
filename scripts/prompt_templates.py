@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """
-HateMirage ICON 2026 — Prompt Templates
-========================================
-Centralized prompt templates for all variants:
-  - vanilla   : direct zero-shot (matches starter kit prompt)
-  - few_shot  : prepend N examples from training data
-  - cot       : chain-of-thought reasoning
+HateMirage ICON 2026 — Prompt Templates (v2)
+=============================================
+Includes COMBINED prompts that generate Target + Intent + Implication
+in a single LLM call (3x faster than separate calls).
 
-Each template function takes (comment, field, **kwargs) and returns
-a fully rendered prompt string.
+Variants: vanilla, few_shot, cot — each with per-field and combined modes.
 """
 
 
@@ -39,10 +36,95 @@ FIELD_INSTRUCTIONS = {
 
 
 # =============================================================================
-# Vanilla (Zero-Shot) — matches the starter kit prompt
+# COMBINED prompt — all 3 fields in ONE generation (3x faster)
+# =============================================================================
+COMBINED_INSTRUCTION = """Analyze the following comment and provide:
+
+1. **Target**: Who is being targeted? If one target, state it as a single word. If multiple, list each as a single word separated by commas.
+2. **Intent**: What is the motive or purpose behind this comment? Answer in one concise sentence.
+3. **Implication**: What is the potential social impact or consequence? Answer in one concise sentence.
+
+Respond EXACTLY in this format (one line each, no extra text):
+Target: <your answer>
+Intent: <your answer>
+Implication: <your answer>"""
+
+
+def combined_vanilla_prompt(comment: str, context: str = "", **kwargs) -> str:
+    """Combined prompt: all 3 fields in one call."""
+    ctx_block = ""
+    if context:
+        ctx_block = (
+            f"\nThe following context provides background information:\n"
+            f"[Context]: \"{context}\"\n"
+        )
+    return (
+        f"{SYSTEM_INTRO}\n{ctx_block}\n"
+        f"{COMBINED_INSTRUCTION}\n\n"
+        f"## Comment: \"{comment}\"\n\n"
+        f"Target:"
+    )
+
+
+def combined_few_shot_prompt(comment: str, examples: list = None,
+                              context: str = "", **kwargs) -> str:
+    """Combined few-shot: examples + all 3 fields in one call."""
+    ctx_block = ""
+    if context:
+        ctx_block = (
+            f"\nThe following context provides background information:\n"
+            f"[Context]: \"{context}\"\n"
+        )
+
+    examples_text = ""
+    if examples:
+        for i, ex in enumerate(examples, 1):
+            examples_text += (
+                f"### Example {i}\n"
+                f"Comment: \"{ex['comment']}\"\n"
+                f"Target: {ex['Target']}\n"
+                f"Intent: {ex['Intent']}\n"
+                f"Implication: {ex['Implication']}\n\n"
+            )
+
+    return (
+        f"{SYSTEM_INTRO}\n{ctx_block}\n"
+        f"{COMBINED_INSTRUCTION}\n\n"
+        f"{examples_text}"
+        f"Now analyze:\n\n"
+        f"## Comment: \"{comment}\"\n\n"
+        f"Target:"
+    )
+
+
+def combined_cot_prompt(comment: str, context: str = "", **kwargs) -> str:
+    """Combined chain-of-thought: reason then output all 3 fields."""
+    ctx_block = ""
+    if context:
+        ctx_block = (
+            f"\nThe following context provides background information:\n"
+            f"[Context]: \"{context}\"\n"
+        )
+    return (
+        f"{SYSTEM_INTRO}\n{ctx_block}\n"
+        f"Think step by step:\n"
+        f"Step 1: Identify the fake claim or misinformation the comment relies on.\n"
+        f"Step 2: Determine who is being targeted.\n"
+        f"Step 3: Consider the commenter's motivation.\n"
+        f"Step 4: Consider the potential social impact.\n\n"
+        f"Then respond EXACTLY in this format (one line each):\n"
+        f"Target: <your answer>\n"
+        f"Intent: <your answer>\n"
+        f"Implication: <your answer>\n\n"
+        f"## Comment: \"{comment}\"\n\n"
+        f"Target:"
+    )
+
+
+# =============================================================================
+# Per-field prompts (original — kept for compatibility)
 # =============================================================================
 def vanilla_prompt(comment: str, field: str, **kwargs) -> str:
-    """Standard zero-shot prompt from the starter kit."""
     instruction = FIELD_INSTRUCTIONS[field]
     return (
         f"{SYSTEM_INTRO}\n\n"
@@ -52,20 +134,9 @@ def vanilla_prompt(comment: str, field: str, **kwargs) -> str:
     )
 
 
-# =============================================================================
-# Few-Shot — prepend labeled examples before the test comment
-# =============================================================================
-def few_shot_prompt(comment: str, field: str, examples: list[dict] = None, **kwargs) -> str:
-    """
-    Few-shot prompt with N examples prepended.
-
-    Args:
-        examples: list of dicts with keys 'comment', 'Target', 'Intent', 'Implication'
-    """
+def few_shot_prompt(comment: str, field: str, examples: list = None, **kwargs) -> str:
     if not examples:
-        # Fall back to vanilla if no examples provided
         return vanilla_prompt(comment, field)
-
     instruction = FIELD_INSTRUCTIONS[field]
     examples_text = ""
     for i, ex in enumerate(examples, 1):
@@ -74,7 +145,6 @@ def few_shot_prompt(comment: str, field: str, examples: list[dict] = None, **kwa
             f"## Comment: \"{ex['comment']}\"\n"
             f"## {field}: {ex[field]}\n\n"
         )
-
     return (
         f"{SYSTEM_INTRO}\n\n"
         f"{instruction}\n\n"
@@ -86,66 +156,28 @@ def few_shot_prompt(comment: str, field: str, examples: list[dict] = None, **kwa
     )
 
 
-# =============================================================================
-# Chain-of-Thought — reason step-by-step
-# =============================================================================
-COT_INSTRUCTIONS = {
-    "Target": (
-        "Step 1: Identify the fake claim or misinformation the comment relies on.\n"
-        "Step 2: Determine who is being targeted or attacked based on this claim.\n"
-        "Step 3: State only the target(s) — one word each, comma-separated if multiple.\n\n"
-        "Provide ONLY the final target(s) after your reasoning."
-    ),
-    "Intent": (
-        "Step 1: Identify the fake claim or misinformation the comment relies on.\n"
-        "Step 2: Consider what the commenter is trying to achieve or convey.\n"
-        "Step 3: Describe the intent in a single concise sentence.\n\n"
-        "Provide ONLY the final intent sentence after your reasoning."
-    ),
-    "Implication": (
-        "Step 1: Identify the fake claim or misinformation the comment relies on.\n"
-        "Step 2: Consider the potential social impact if this comment were widely spread.\n"
-        "Step 3: Describe the implication in a single concise sentence.\n\n"
-        "Provide ONLY the final implication sentence after your reasoning."
-    ),
-}
-
-
 def cot_prompt(comment: str, field: str, **kwargs) -> str:
-    """Chain-of-thought prompt for deeper reasoning."""
-    instruction = COT_INSTRUCTIONS[field]
+    COT_INSTRUCTIONS = {
+        "Target": "Step 1: Identify the fake claim.\nStep 2: Who is targeted?\nStep 3: State only the target(s).\n\nProvide ONLY the final target(s).",
+        "Intent": "Step 1: Identify the fake claim.\nStep 2: What is the commenter trying to achieve?\nStep 3: Describe intent in one sentence.\n\nProvide ONLY the final intent.",
+        "Implication": "Step 1: Identify the fake claim.\nStep 2: What social impact could this have?\nStep 3: Describe implication in one sentence.\n\nProvide ONLY the final implication.",
+    }
     return (
         f"{SYSTEM_INTRO}\n\n"
-        f"Think step by step:\n"
-        f"{instruction}\n\n"
+        f"Think step by step:\n{COT_INSTRUCTIONS[field]}\n\n"
         f"## Comment: \"{comment}\"\n"
         f"## {field}:"
     )
 
 
-# =============================================================================
-# RAG-Augmented — injects retrieved context into any base variant
-# =============================================================================
 def rag_prompt(comment: str, field: str, context: str = "",
                base_variant: str = "vanilla", **kwargs) -> str:
-    """
-    RAG-augmented prompt: wraps any base variant with retrieved context.
-
-    Args:
-        context: concatenated text from top-k retrieved documents
-        base_variant: which base prompt style to use ("vanilla", "few_shot", "cot")
-    """
     context_block = (
-        f"The following context provides background information retrieved from "
-        f"credible sources about fake claims and misinformation:\n"
+        f"The following context provides background information:\n"
         f"[Context]: \"{context}\"\n\n"
         f"Use this context to ground your analysis.\n\n"
     )
-
     instruction = FIELD_INSTRUCTIONS[field]
-    if base_variant == "cot":
-        instruction = COT_INSTRUCTIONS[field]
-
     return (
         f"{SYSTEM_INTRO}\n\n"
         f"{context_block}"
@@ -156,7 +188,7 @@ def rag_prompt(comment: str, field: str, context: str = "",
 
 
 # =============================================================================
-# Template dispatcher
+# Registries
 # =============================================================================
 PROMPT_REGISTRY = {
     "vanilla": vanilla_prompt,
@@ -165,20 +197,23 @@ PROMPT_REGISTRY = {
     "rag": rag_prompt,
 }
 
+COMBINED_PROMPT_REGISTRY = {
+    "vanilla": combined_vanilla_prompt,
+    "few_shot": combined_few_shot_prompt,
+    "cot": combined_cot_prompt,
+}
+
 
 def get_prompt(variant: str, comment: str, field: str, **kwargs) -> str:
-    """
-    Get a rendered prompt for the given variant.
-
-    Args:
-        variant: one of "vanilla", "few_shot", "cot", "rag"
-        comment: the input comment text
-        field: one of "Target", "Intent", "Implication"
-        **kwargs: extra args passed to the template function
-            - examples (list[dict]): for few_shot
-            - context (str): for rag
-            - base_variant (str): for rag (which underlying prompt style)
-    """
+    """Get a rendered per-field prompt."""
     if variant not in PROMPT_REGISTRY:
-        raise ValueError(f"Unknown prompt variant: {variant}. Choose from {list(PROMPT_REGISTRY.keys())}")
+        raise ValueError(f"Unknown variant: {variant}. Choose from {list(PROMPT_REGISTRY.keys())}")
     return PROMPT_REGISTRY[variant](comment, field, **kwargs)
+
+
+def get_combined_prompt(variant: str, comment: str, **kwargs) -> str:
+    """Get a rendered combined prompt (all 3 fields in one call)."""
+    base = variant.replace("rag_", "")
+    if base not in COMBINED_PROMPT_REGISTRY:
+        base = "vanilla"
+    return COMBINED_PROMPT_REGISTRY[base](comment, **kwargs)
