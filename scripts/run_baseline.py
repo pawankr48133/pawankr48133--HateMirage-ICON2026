@@ -309,6 +309,7 @@ def run_inference(config: dict, mode: str, prompt_variant: str,
     # --- Generation function ---
     def generate(prompt: str) -> str:
         inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048)
+        input_length = inputs["input_ids"].shape[1]  # track prompt length
         inputs = {k: v.to(device) for k, v in inputs.items()}
         with torch.no_grad():
             output = model.generate(
@@ -317,7 +318,9 @@ def run_inference(config: dict, mode: str, prompt_variant: str,
                 do_sample=do_sample,
                 pad_token_id=tokenizer.pad_token_id,
             )
-        return tokenizer.decode(output[0], skip_special_tokens=True).strip()
+        # CRITICAL: only decode NEW tokens, not the prompt
+        new_tokens = output[0][input_length:]
+        return tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
 
     # --- Inference loop with checkpointing ---
     start_time = time.time()
