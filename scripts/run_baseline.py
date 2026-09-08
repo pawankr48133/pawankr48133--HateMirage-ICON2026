@@ -149,7 +149,13 @@ def save_checkpoint(results: list, output_path: str):
 # =============================================================================
 def build_faiss_index(config: dict):
     """Build or load FAISS index from RAG reference documents."""
-    from langchain.docstore.document import Document
+    try:
+        from langchain_core.documents import Document
+    except ImportError:
+        try:
+            from langchain.docstore.document import Document
+        except ImportError:
+            from langchain_community.docstore.document import Document
     from langchain_community.embeddings import HuggingFaceEmbeddings
     from langchain_community.vectorstores import FAISS
 
