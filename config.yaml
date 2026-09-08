@@ -36,9 +36,9 @@ rag:
   # Embedding model for FAISS retrieval
   embedding_model: "sentence-transformers/all-mpnet-base-v2"
   # Path to JSONL file with context documents
-  source_docs: "source_docs/RAG_Reference_Data.jsonl"
+  source_docs: "Starter-Kit/source_docs/RAG_Reference_Data.jsonl"
   # Path to supplementary fake claims file
-  fake_claims: "source_docs/fake_claims.txt"
+  fake_claims: "Starter-Kit/source_docs/fake_claims.txt"
   # Number of top-k documents to retrieve per query
   top_k: 5
   # Directory where built FAISS index is stored
