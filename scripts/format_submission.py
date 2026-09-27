@@ -34,26 +34,29 @@ def format_submission(predictions_path: str, output_dir: str = "outputs") -> Non
     combined_zip = os.path.join(output_dir, "submission.zip")
 
     combined_df = pd.DataFrame({
-        "id": df["Index"],
-        "target": df["Pred_Target"].fillna(""),
-        "intent": df["Pred_Intent"].fillna(""),
-        "implication": df["Pred_Implication"].fillna(""),
+        "Index": df["Index"],
+        "Comments": df["Comments"].fillna(""),
+        "Target": df["Pred_Target"].fillna(""),
+        "Intent": df["Pred_Intent"].fillna(""),
+        "Implication": df["Pred_Implication"].fillna(""),
     })
     combined_df.to_csv(combined_csv, index=False)
 
     with zipfile.ZipFile(combined_zip, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.write(combined_csv, "predictions.csv")  # must be named predictions.csv inside ZIP
+        zf.write(combined_csv, "predictions.csv")
 
-    print(f"Combined submission created:")
+    print(f"Submission created:")
     print(f"  CSV: {combined_csv}")
     print(f"  ZIP: {combined_zip}")
     print(f"  Rows: {len(combined_df)}")
+    print(f"  Columns: {list(combined_df.columns)}")
     print(f"\n  Sample rows:")
     print(combined_df.head(3).to_string(index=False))
 
     print(f"\n{'='*50}")
-    print(f"  Upload this ONE file to Codabench:")
-    print(f"  >>> {combined_zip}")
+    print(f"  Upload this file via Google Form:")
+    print(f"  >>> {combined_csv}")
+    print(f"  (or {combined_zip} if ZIP is required)")
     print(f"{'='*50}\n")
 
 
